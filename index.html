@@ -1,0 +1,283 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BJT CE Characteristics Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --meter-bg: #1a1a1a; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background: #f0f2f5; color: var(--primary); line-height: 1.6; }
+        header { background: var(--primary); color: white; padding: 20px; text-align: center; border-bottom: 5px solid var(--accent); }
+        .container { max-width: 1200px; margin: 20px auto; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        .lab-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 25px; }
+        .panel { border: 1px solid #e0e0e0; padding: 20px; border-radius: 10px; background: #ffffff; }
+        
+        .circuit-box { text-align: center; margin-bottom: 20px; padding: 10px; border: 1px dashed #ccc; border-radius: 8px; }
+        .circuit-img { max-width: 100%; height: auto; border-radius: 5px; }
+
+        .control-block { background: #fdfdfd; padding: 15px; border-radius: 8px; border-left: 5px solid var(--accent); margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .control-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        input[type=range] { width: 55%; cursor: pointer; }
+
+        .inline-meter { background: var(--meter-bg); color: #0f0; padding: 10px 15px; border-radius: 6px; font-family: 'Courier New', monospace; font-weight: bold; font-size: 1.3rem; min-width: 110px; text-align: right; box-shadow: inset 0 0 8px #000; }
+        .meter-label { font-size: 0.85rem; color: #666; font-weight: bold; margin-bottom: 5px; display: block; }
+
+        .analysis-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
+        .analysis-card { background: #e8f6ef; border: 1px solid var(--success); padding: 15px; border-radius: 8px; text-align: center; }
+        .analysis-card strong { display: block; color: var(--success); font-size: 0.9rem; margin-bottom: 5px; }
+        .analysis-card span { font-size: 1.2rem; font-weight: bold; font-family: monospace; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9rem; }
+        table, th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background: #f8f9fa; color: var(--primary); }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; }
+        .btn-record { background: var(--accent); }
+        .btn-reset { background: #e74c3c; }
+        .btn-export { background: var(--success); }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+
+        .content-section { margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; }
+        .quiz-card { background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--primary); }
+        
+        @media (max-width: 900px) { .lab-grid { grid-template-columns: 1fr; } .analysis-grid { grid-template-columns: 1fr 1fr; } }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="max-width: 1200px; margin: auto;">
+        <h1 style="margin:0;">Transistor Characteristics in Common Emitter (CE) Mode</h1>
+        <p style="margin:5px 0 0 0; opacity: 0.9;">Dr Shivkumar Math, Professor and HOD, Dept. of Physics, Jain College of Engineering, Belagavi</p>
+    </div>
+</header>
+
+<div class="container">
+    <div class="lab-grid">
+        <div class="panel">
+            <div class="circuit-box">
+                <img src="transistor circuit diagram.jpg" 
+                     alt="CE Circuit Diagram" class="circuit-img"
+                     onerror="this.src='https://via.placeholder.com/450x220?text=Circuit+Diagram+Path+Requested';">
+            </div>
+
+            <div class="control-block">
+                <div class="control-row">
+                    <label>Base Supply (Vbe): <strong><span id="vbeVal">0.00</span> V</strong></label>
+                    <input type="range" id="vbeSlider" min="0" max="1.0" step="0.01" value="0">
+                </div>
+                <div style="text-align:right;">
+                    <span class="meter-label">Base Current (Ib)</span>
+                    <div class="inline-meter"><span id="ibTab">0</span> uA</div>
+                </div>
+            </div>
+
+            <div class="control-block" style="border-left-color: #e67e22;">
+                <div class="control-row">
+                    <label>Collector Supply (Vce): <strong><span id="vceVal">1.0</span> V</strong></label>
+                    <input type="range" id="vceSlider" min="0" max="15" step="0.1" value="1">
+                </div>
+                <div style="text-align:right;">
+                    <span class="meter-label">Collector Current (Ic)</span>
+                    <div class="inline-meter" style="color:#ffa500;"><span id="icTab">0.00</span> mA</div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-record" onclick="recordObservation()">Record Point</button>
+                <button class="btn-export" onclick="exportCSV()">Export Excel</button>
+                <button class="btn-reset" onclick="resetSim()">Reset Lab</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <canvas id="inputChart" height="180"></canvas>
+            <div style="margin: 25px 0; border-top: 1px solid #eee;"></div>
+            <canvas id="outputChart" height="180"></canvas>
+        </div>
+    </div>
+
+    <div class="analysis-grid">
+        <div class="analysis-card"><strong>Input Res. (Ri)</strong> <span id="calcRi">--</span> Ohms</div>
+        <div class="analysis-card"><strong>Output Res. (Ro)</strong> <span id="calcRo">--</span> kOhms</div>
+        <div class="analysis-card"><strong>Current Gain (Beta)</strong> <span id="calcBeta">--</span></div>
+        <div class="analysis-card"><strong>Knee Voltage (Vk)</strong> <span id="calcVk">--</span> V</div>
+    </div>
+
+    <div class="panel">
+        <h3 style="margin-top:0;">Observation Table</h3>
+        <div style="overflow-y: auto; max-height: 300px;">
+            <table id="obsTable">
+                <thead>
+                    <tr>
+                        <th>Sr. No</th><th>Vbe (V)</th><th>Ib (uA)</th><th>Vce (V)</th><th>Ic (mA)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <div class="lab-grid" style="grid-template-columns: 1fr 1fr;">
+            <div>
+                <h2 style="color:var(--primary);">Theory</h2>
+                <p>In a Common Emitter (CE) configuration, the emitter terminal of the BJT is common to both the input and output circuits. It is the most widely used configuration for amplification due to its high voltage and current gain.</p>
+                <ul>
+                    <li><strong>Input Characteristics:</strong> The variation of Ib with Vbe for a constant Vce. The transistor remains in cut-off until Vbe reaches the barrier potential (approx. 0.6V for Silicon).</li>
+                    <li><strong>Output Characteristics:</strong> The variation of Ic with Vce for a constant Ib. This identifies three regions: Saturation, Active, and Cut-off.</li>
+                    <li><strong>Input Resistance (Ri):</strong> Delta Vbe / Delta Ib (Measured in the active region).</li>
+                    <li><strong>Output Resistance (Ro):</strong> Delta Vce / Delta Ic (Measured from the slope of the output curve).</li>
+                </ul>
+            </div>
+            <div>
+                <h2 style="color:var(--primary);">Procedure</h2>
+                <ol>
+                    <li><strong>Input Characteristics:</strong> Keep Vce constant (e.g., 1V). Gradually increase Vbe using the slider and record the resulting Ib.</li>
+                    <li><strong>Output Characteristics:</strong> Set Vbe to a fixed value to maintain a constant Ib (e.g., 100 uA). Gradually vary Vce from 0V to 15V and record Ic.</li>
+                    <li><strong>Calculations:</strong> Use the Recorded Points to observe the slopes. The simulator calculates dynamic resistance and gain automatically based on the gradient between recorded points.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <h2 style="color:var(--primary); text-align:center;">Self-Assessment Quiz</h2>
+        <div id="quizContainer">
+            <div class="quiz-card">
+                <p><strong>1. In which region does the transistor act as a fully closed switch?</strong></p>
+                <input type="radio" name="q1" value="0"> Cut-off Region<br>
+                <input type="radio" name="q1" value="1"> Saturation Region<br>
+                <input type="radio" name="q1" value="2"> Active Region
+            </div>
+            <div class="quiz-card">
+                <p><strong>2. What is the phase shift between input and output signals in CE mode?</strong></p>
+                <input type="radio" name="q2" value="0"> 0 degrees<br>
+                <input type="radio" name="q2" value="1"> 90 degrees<br>
+                <input type="radio" name="q2" value="2"> 180 degrees
+            </div>
+            <div class="quiz-card">
+                <p><strong>3. If Delta Ic = 2 mA and Delta Ib = 20 uA, what is the current gain (Beta)?</strong></p>
+                <input type="radio" name="q3" value="0"> 10<br>
+                <input type="radio" name="q3" value="1"> 100<br>
+                <input type="radio" name="q3" value="2"> 200
+            </div>
+            <div style="text-align: center;">
+                <button style="background:var(--primary); width: 200px;" onclick="checkQuiz()">Submit Quiz</button>
+                <p id="quizResult" style="margin-top:15px; font-weight:bold; color:var(--success);"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let observations = [];
+    let inChart, outChart;
+
+    function getSmoothIB(vbe) {
+        if (vbe < 0.55) return 0;
+        let ib = 2.5 * (Math.exp((vbe - 0.5) / 0.055) - 1);
+        return Math.min(650, ib);
+    }
+
+    function getSmoothIC(ib, vce) {
+        if (ib <= 0) return 0;
+        const beta = 110; 
+        const earlyEffect = (1 + vce/100);
+        const saturationFactor = (1 - Math.exp(-vce / 0.4)); 
+        return (ib * beta / 1000) * saturationFactor * earlyEffect;
+    }
+
+    function initCharts() {
+        const config = (label, xTitle, yTitle, color) => ({
+            type: 'line',
+            data: { datasets: [{ label, data: [], borderColor: color, backgroundColor: color + '33', fill: true, tension: 0.4 }] },
+            options: { responsive: true, scales: { x: { type: 'linear', title: { display: true, text: xTitle } }, y: { title: { display: true, text: yTitle } } } }
+        });
+        inChart = new Chart(document.getElementById('inputChart'), config('Input: Ib vs Vbe', 'Vbe (V)', 'Ib (uA)', '#3498db'));
+        outChart = new Chart(document.getElementById('outputChart'), config('Output: Ic vs Vce', 'Vce (V)', 'Ic (mA)', '#e67e22'));
+    }
+
+    function updateSim() {
+        const vbe = parseFloat(document.getElementById('vbeSlider').value);
+        const vce = parseFloat(document.getElementById('vceSlider').value);
+        const ib = getSmoothIB(vbe);
+        const ic = getSmoothIC(ib, vce);
+
+        document.getElementById('vbeVal').innerText = vbe.toFixed(2);
+        document.getElementById('vceVal').innerText = vce.toFixed(1);
+        document.getElementById('ibTab').innerText = Math.round(ib);
+        document.getElementById('icTab').innerText = ic.toFixed(2);
+    }
+
+    function recordObservation() {
+        const vbe = parseFloat(document.getElementById('vbeSlider').value);
+        const vce = parseFloat(document.getElementById('vceSlider').value);
+        const ib = Math.round(getSmoothIB(vbe));
+        const ic = parseFloat(getSmoothIC(ib, vce).toFixed(2));
+
+        observations.push({ vbe, ib, vce, ic });
+        
+        const row = document.getElementById('obsTable').querySelector('tbody').insertRow();
+        row.innerHTML = `<td>${observations.length}</td><td>${vbe.toFixed(2)}</td><td>${ib}</td><td>${vce.toFixed(1)}</td><td>${ic}</td>`;
+        
+        updateVisuals();
+    }
+
+    function updateVisuals() {
+        inChart.data.datasets[0].data = observations.map(o => ({ x: o.vbe, y: o.ib }));
+        outChart.data.datasets[0].data = observations.map(o => ({ x: o.vce, y: o.ic }));
+        inChart.update(); outChart.update();
+
+        if (observations.length >= 2) {
+            const p1 = observations[observations.length - 2];
+            const p2 = observations[observations.length - 1];
+
+            const dVbe = p2.vbe - p1.vbe;
+            const dIb = (p2.ib - p1.ib) / 1e6;
+            if (dIb > 0) document.getElementById('calcRi').innerText = Math.round(dVbe / dIb);
+
+            const dVce = p2.vce - p1.vce;
+            const dIc = (p2.ic - p1.ic) / 1e3;
+            if (Math.abs(dIc) > 1e-7) document.getElementById('calcRo').innerText = (Math.abs(dVce / dIc) / 1000).toFixed(2);
+
+            if (p2.ib > 0) document.getElementById('calcBeta').innerText = (p2.ic / (p2.ib/1000)).toFixed(1);
+            document.getElementById('calcVk').innerText = (p2.vce < 1.5) ? p2.vce.toFixed(2) : "0.45";
+        }
+    }
+
+    function resetSim() {
+        observations = [];
+        document.querySelector('#obsTable tbody').innerHTML = "";
+        inChart.data.datasets[0].data = [];
+        outChart.data.datasets[0].data = [];
+        inChart.update(); outChart.update();
+        ["calcRi", "calcRo", "calcBeta", "calcVk"].forEach(id => document.getElementById(id).innerText = "--");
+    }
+
+    function exportCSV() {
+        let csv = "Sr. No,Vbe(V),Ib(uA),Vce(V),Ic(mA)\n";
+        observations.forEach((o, i) => csv += `${i+1},${o.vbe},${o.ib},${o.vce},${o.ic}\n`);
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        a.download = 'Transistor_Lab_Report.csv'; a.click();
+    }
+
+    function checkQuiz() {
+        let s = 0;
+        if(document.querySelector('input[name="q1"]:checked')?.value == "1") s++;
+        if(document.querySelector('input[name="q2"]:checked')?.value == "2") s++;
+        if(document.querySelector('input[name="q3"]:checked')?.value == "1") s++;
+        document.getElementById('quizResult').innerText = `Your Score: ${s}/3.`;
+    }
+
+    window.onload = () => { initCharts(); updateSim(); };
+    document.getElementById('vbeSlider').oninput = updateSim;
+    document.getElementById('vceSlider').oninput = updateSim;
+</script>
+</body>
+</html>
